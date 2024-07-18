@@ -27,20 +27,20 @@ func New(ctx context.Context, dsn string) (*DB, error) {
 		return nil, err
 	}
 
-	// tx, err := db.BeginTx(ctx, nil)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// for _, migration := range migrations {
-	// 	if _, err := tx.Exec(migration); err != nil {
-	// 		tx.Rollback()
-	// 		return nil, err
-	// 	}
-	// }
-	// if err := tx.Commit(); err != nil {
-	// 	tx.Rollback()
-	// 	return nil, err
-	// }
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	for _, migration := range migrations {
+		if _, err := tx.Exec(migration); err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		return nil, err
+	}
 
 	return &DB{db: db}, nil
 }
@@ -68,4 +68,18 @@ func (db *DB) Register(ctx context.Context, login string, pass string) (bool, er
 	}
 
 	return rowsAffected == 0, err
+}
+
+// Поиск хэша пароля пользователя
+func (db *DB) GetPass(ctx context.Context, login string) (string, error) {
+
+	row := db.db.QueryRowContext(ctx, queryPassword, login)
+
+	pass := new(string)
+	err := row.Scan(pass)
+	if err != nil {
+		return "", err
+	}
+
+	return *pass, nil
 }

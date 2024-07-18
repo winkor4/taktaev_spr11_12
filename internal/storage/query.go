@@ -21,4 +21,12 @@ var (
 		$2
 	)
 	ON CONFLICT (login) DO NOTHING;`
+
+	queryPassword = `
+	SELECT
+		password
+	FROM
+		users
+	WHERE 
+		login = $1`
 )

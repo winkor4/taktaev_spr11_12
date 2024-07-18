@@ -23,6 +23,12 @@ func hash(pass string) (string, error) {
 	return string(bytes), err
 }
 
+// Проверяет соответствие пароля и хэша
+func checkHash(pass, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(pass))
+	return err == nil
+}
+
 // Создает куку для авторизации
 func authToken(login string) (*http.Cookie, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)

@@ -39,6 +39,7 @@ func SrvRouter(s *Server) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Post("/api/user/register", checkContentType(register(s), "application/json"))
+	r.Post("/api/user/login", checkContentType(login(s), "application/json"))
 
 	return r
 }

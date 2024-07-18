@@ -4,6 +4,8 @@ package storage
 import (
 	"context"
 	"database/sql"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 // DB - база данных

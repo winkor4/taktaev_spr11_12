@@ -6,6 +6,11 @@ var migrations = []string{
 		login TEXT UNIQUE NOT NULL,
 		password TEXT NOT NULL
 	);`,
+	`CREATE TABLE IF NOT EXISTS text_data (
+		id TEXT NOT NULL,
+		user_login TEXT NOT NULL,
+		data TEXT NOT NULL
+	);`,
 }
 
 var (

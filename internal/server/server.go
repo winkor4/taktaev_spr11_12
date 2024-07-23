@@ -38,8 +38,19 @@ func (s *Server) Run() error {
 func SrvRouter(s *Server) *chi.Mux {
 	r := chi.NewRouter()
 
-	r.Post("/api/user/register", checkContentType(register(s), "application/json"))
-	r.Post("/api/user/login", checkContentType(login(s), "application/json"))
+	r.Post("/api/register", checkContentType(register(s), "application/json"))
+	r.Post("/api/login", checkContentType(login(s), "application/json"))
+	r.Mount("/api/user", userRouter(s))
+
+	return r
+}
+
+// UserRouter - возвращает новый объект Mux
+func userRouter(s *Server) *chi.Mux {
+	r := chi.NewRouter()
+	r.Use(authorization())
+
+	r.Post("/data/text", checkContentType(uploadTextData(s), "application/json"))
 
 	return r
 }

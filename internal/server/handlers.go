@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/winkor4/taktaev_spr11_12/internal/model"
@@ -87,6 +88,43 @@ func login(s *Server) http.HandlerFunc {
 		http.SetCookie(w, token)
 
 		w.WriteHeader(http.StatusOK)
+
+	}
+}
+
+// Загрузка новых текстовых данных на сервер
+func uploadTextData(s *Server) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "Can't read body", http.StatusBadRequest)
+			return
+		}
+
+		data := make([]model.TextDataList, 0)
+		if err = json.Unmarshal(body, &data); err != nil {
+			http.Error(w, "Can't unmarshal body", http.StatusBadRequest)
+			return
+		}
+
+		user, ok := userFromCtx(r.Context())
+		if !ok {
+			http.Error(w, "can't read login", http.StatusInternalServerError)
+			return
+		}
+
+		result, err := s.db.UploadTextData(r.Context(), user, data)
+		if err != nil {
+			http.Error(w, "Can't get data", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			http.Error(w, "Can't encode response", http.StatusInternalServerError)
+			return
+		}
 
 	}
 }

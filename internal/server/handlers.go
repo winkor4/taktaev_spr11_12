@@ -3,6 +3,8 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/winkor4/taktaev_spr11_12/internal/crypto"
 )
 
 // Регистрация пользователя в приложении
@@ -13,6 +15,12 @@ func addUser(s *Server) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&parameters)
 		if err != nil {
 			http.Error(w, "Can't read body", http.StatusBadRequest)
+			return
+		}
+
+		key := r.Header.Get("Key")
+		if key == "" {
+			http.Error(w, "can't read data type", http.StatusBadRequest)
 			return
 		}
 
@@ -27,7 +35,14 @@ func addUser(s *Server) http.HandlerFunc {
 			return
 		}
 
-		conflict, err := s.db.AddUser(r.Context(), parameters.Login, hash)
+		encryptionSK := crypto.RandStr(16)
+		encryptionSK, err = crypto.Encrypt(encryptionSK, key)
+		if err != nil {
+			http.Error(w, "can't Encrypt key", http.StatusInternalServerError)
+			return
+		}
+
+		conflict, err := s.db.AddUser(r.Context(), addUserReqToModel(parameters.Login, hash, encryptionSK))
 		if err != nil {
 			http.Error(w, "can't register", http.StatusInternalServerError)
 			return
@@ -101,7 +116,7 @@ func addContent(s *Server) http.HandlerFunc {
 
 		dataType := r.Header.Get("Data-Type")
 		if dataType == "" {
-			http.Error(w, "can't read data type", http.StatusInternalServerError)
+			http.Error(w, "can't read data type", http.StatusBadRequest)
 			return
 		}
 

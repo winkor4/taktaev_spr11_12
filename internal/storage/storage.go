@@ -6,6 +6,7 @@ import (
 	"database/sql"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/winkor4/taktaev_spr11_12/internal/model"
 )
 
 // DB - база данных
@@ -56,11 +57,12 @@ func (db *DB) Ping(ctx context.Context) error {
 }
 
 // Создает нового пользователя
-func (db *DB) AddUser(ctx context.Context, login string, pass string) (bool, error) {
+func (db *DB) AddUser(ctx context.Context, data model.User) (bool, error) {
 
 	result, err := db.db.ExecContext(ctx, queryAddUser,
-		login,
-		pass)
+		data.Login,
+		data.Password,
+		data.Key)
 	if err != nil {
 		return false, err
 	}

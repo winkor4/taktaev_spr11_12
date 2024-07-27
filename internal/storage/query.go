@@ -4,7 +4,8 @@ var migrations = []string{
 	`CREATE TABLE IF NOT EXISTS users 
 	(
 		login TEXT UNIQUE NOT NULL,
-		password TEXT NOT NULL
+		password TEXT NOT NULL,
+		key TEXT NOT NULL
 	);`,
 	// `CREATE TABLE IF NOT EXISTS text_data (
 	// 	user_login TEXT UNIQUE NOT NULL,
@@ -19,12 +20,14 @@ var (
 	INSERT INTO users 
 	(
 		login, 
-		password
+		password,
+		key
 	)
 	VALUES 
 	(
 		$1, 
-		$2
+		$2,
+		$3
 	)
 	ON CONFLICT (login) DO NOTHING;`
 

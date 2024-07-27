@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/winkor4/taktaev_spr11_12/internal/crypto"
 	"github.com/winkor4/taktaev_spr11_12/internal/log"
 	"github.com/winkor4/taktaev_spr11_12/internal/pkg/config"
 	"github.com/winkor4/taktaev_spr11_12/internal/server"
@@ -35,7 +36,7 @@ func TestApp(t *testing.T) {
 
 	var parameters testParam
 	parameters.srv = newTestSrv(t)
-	parameters.masterSK = "abc&1*~#^2^#s0^=)^^"
+	parameters.masterSK = crypto.RandStr(16)
 	parameters.auth(t)
 	parameters.addContentLogPass(t)
 }
@@ -122,6 +123,7 @@ func (parameters *testParam) auth(t *testing.T) {
 		request, err := http.NewRequest(http.MethodPost, parameters.srv.URL+"/user", body)
 		require.NoError(t, err)
 		request.Header.Set("Content-Type", "application/json")
+		request.Header.Set("Key", parameters.masterSK)
 
 		client := parameters.srv.Client()
 		r, err := client.Do(request)

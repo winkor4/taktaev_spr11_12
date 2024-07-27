@@ -3,6 +3,8 @@ package server
 import (
 	"encoding/json"
 	"io"
+
+	"github.com/winkor4/taktaev_spr11_12/internal/model"
 )
 
 // Входящие данные при регистрации и авторизации
@@ -41,4 +43,12 @@ func (schema *addContentLogPass) jsonDecode(body io.ReadCloser) error {
 		return err
 	}
 	return nil
+}
+
+func addUserReqToModel(l string, p string, k string) model.User {
+	return model.User{
+		Login:    l,
+		Password: p,
+		Key:      k,
+	}
 }

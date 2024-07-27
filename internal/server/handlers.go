@@ -2,17 +2,14 @@ package server
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
-
-	"github.com/winkor4/taktaev_spr11_12/internal/model"
 )
 
 // Регистрация пользователя в приложении
-func register(s *Server) http.HandlerFunc {
+func addUser(s *Server) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		var parameters model.RegisterRequest
+		var parameters authSchema
 		err := json.NewDecoder(r.Body).Decode(&parameters)
 		if err != nil {
 			http.Error(w, "Can't read body", http.StatusBadRequest)
@@ -30,7 +27,7 @@ func register(s *Server) http.HandlerFunc {
 			return
 		}
 
-		conflict, err := s.db.Register(r.Context(), parameters.Login, hash)
+		conflict, err := s.db.AddUser(r.Context(), parameters.Login, hash)
 		if err != nil {
 			http.Error(w, "can't register", http.StatusInternalServerError)
 			return
@@ -42,7 +39,7 @@ func register(s *Server) http.HandlerFunc {
 
 		token, err := authToken(parameters.Login)
 		if err != nil {
-			http.Error(w, "can't auth", http.StatusInternalServerError)
+			http.Error(w, "can't create Token", http.StatusInternalServerError)
 			return
 		}
 
@@ -54,10 +51,10 @@ func register(s *Server) http.HandlerFunc {
 }
 
 // Авторизация пользователя в приложении
-func login(s *Server) http.HandlerFunc {
+func atuhUser(s *Server) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		var parameters model.RegisterRequest
+		var parameters authSchema
 		err := json.NewDecoder(r.Body).Decode(&parameters)
 		if err != nil {
 			http.Error(w, "Can't read body", http.StatusBadRequest)
@@ -92,39 +89,30 @@ func login(s *Server) http.HandlerFunc {
 	}
 }
 
-// Загрузка новых текстовых данных на сервер
-func uploadTextData(s *Server) http.HandlerFunc {
+// Запись данных на сервер
+func addContent(s *Server) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		body, err := io.ReadAll(r.Body)
+		// user, ok := userFromCtx(r.Context())
+		// if !ok {
+		// 	http.Error(w, "can't read login", http.StatusInternalServerError)
+		// 	return
+		// }
+
+		dataType := r.Header.Get("Data-Type")
+		if dataType == "" {
+			http.Error(w, "can't read data type", http.StatusInternalServerError)
+			return
+		}
+
+		parameters := getAddContentSchema(dataType)
+		err := parameters.jsonDecode(r.Body)
 		if err != nil {
 			http.Error(w, "Can't read body", http.StatusBadRequest)
 			return
 		}
 
-		data := make([]model.TextDataList, 0)
-		if err = json.Unmarshal(body, &data); err != nil {
-			http.Error(w, "Can't unmarshal body", http.StatusBadRequest)
-			return
-		}
-
-		user, ok := userFromCtx(r.Context())
-		if !ok {
-			http.Error(w, "can't read login", http.StatusInternalServerError)
-			return
-		}
-
-		result, err := s.db.UploadTextData(r.Context(), user, data)
-		if err != nil {
-			http.Error(w, "Can't get data", http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(result); err != nil {
-			http.Error(w, "Can't encode response", http.StatusInternalServerError)
-			return
-		}
 
 	}
 }

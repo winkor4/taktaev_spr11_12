@@ -11,7 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/winkor4/taktaev_spr11_12/internal/crypto"
 	"github.com/winkor4/taktaev_spr11_12/internal/log"
 	"github.com/winkor4/taktaev_spr11_12/internal/pkg/config"
 	"github.com/winkor4/taktaev_spr11_12/internal/server"
@@ -36,7 +35,7 @@ func TestApp(t *testing.T) {
 
 	var parameters testParam
 	parameters.srv = newTestSrv(t)
-	parameters.masterSK = crypto.RandStr(16)
+	parameters.masterSK = "[GUc7^q!u}!%RFGt"
 	parameters.auth(t)
 	parameters.addContentLogPass(t)
 }
@@ -169,6 +168,7 @@ func (parameters *testParam) addContentLogPass(t *testing.T) {
 		require.NoError(t, err)
 		request.Header.Set("Content-Type", "application/json")
 		request.Header.Set("Data-Type", "LogPass")
+		request.Header.Set("Key", parameters.masterSK)
 
 		for _, c := range parameters.user.cookies {
 			request.AddCookie(c)

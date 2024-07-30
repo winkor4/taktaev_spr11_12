@@ -12,12 +12,12 @@ import (
 )
 
 // Преобразование байт в строку
-func encode(b []byte) string {
+func Encode(b []byte) string {
 	return base64.StdEncoding.EncodeToString(b)
 }
 
 // Преобразование строки в байты
-func decode(s string) ([]byte, error) {
+func Decode(s string) ([]byte, error) {
 	data, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func Encrypt(text, MySecret string) (string, error) {
 
 	cfb := cipher.NewCFBEncrypter(block, iv)
 	cfb.XORKeyStream(cipherText[aes.BlockSize:], plainText)
-	return encode(cipherText), nil
+	return Encode(cipherText), nil
 }
 
 // Расшифровывает строку
@@ -52,7 +52,7 @@ func Decrypt(text, MySecret string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	cipherText, err := decode(text)
+	cipherText, err := Decode(text)
 	if err != nil {
 		return "", err
 	}

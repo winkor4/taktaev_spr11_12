@@ -38,4 +38,12 @@ var (
 		users
 	WHERE 
 		login = $1`
+
+	queryKey = `
+	SELECT
+		key
+	FROM
+		users
+	WHERE 
+		login = $1`
 )

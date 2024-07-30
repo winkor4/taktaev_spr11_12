@@ -90,3 +90,25 @@ func (db *DB) GetPass(ctx context.Context, login string) (string, error) {
 
 	return *pass, nil
 }
+
+// Поиск encryptionSK пользователя
+func (db *DB) GetKey(ctx context.Context, login string) (string, error) {
+
+	row := db.db.QueryRowContext(ctx, queryKey, login)
+
+	pass := new(string)
+	err := row.Scan(pass)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+
+	return *pass, nil
+}
+
+// Запись данных в БД
+func (db *DB) AddContent(ctx context.Context, sData model.StorageData) error {
+	return nil
+}

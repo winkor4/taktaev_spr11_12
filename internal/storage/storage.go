@@ -192,3 +192,26 @@ func (db *DB) DeleteContent(ctx context.Context, name, user string) error {
 
 	return nil
 }
+
+// Обновление данных в БД
+func (db *DB) UpdateContent(ctx context.Context, sData model.StorageData) error {
+	tx, err := db.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	if _, err := tx.Exec(queryUpdateContent,
+		sData.ContentType,
+		sData.Data,
+		sData.DataSK,
+		sData.User.Login,
+		sData.Name); err != nil {
+		err = tx.Rollback()
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		err = tx.Rollback()
+		return err
+	}
+
+	return nil
+}

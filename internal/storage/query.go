@@ -98,4 +98,14 @@ var (
 	WHERE 
 		user_login = $1
 		AND name = $2`
+
+	queryUpdateContent = `
+	UPDATE content
+	SET
+		content_type = $1,
+		data = $2,
+		data_key = $3
+	WHERE
+		user_login = $4
+		AND name = $5`
 )

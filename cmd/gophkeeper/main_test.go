@@ -41,6 +41,7 @@ func TestApp(t *testing.T) {
 	parameters.masterSK = "[GUc7^q!u}!%RFGt"
 	parameters.auth(t)
 	parameters.addContentLogPass(t)
+	parameters.updateContent(t)
 	parameters.getContentLogPass(t)
 	parameters.deleteContent(t)
 	parameters.сontentList(t)
@@ -173,9 +174,14 @@ func (parameters *testParam) addContentLogPass(t *testing.T) {
 			Login:    "mailLogin",
 			Password: "mailPass",
 		},
+		{
+			Name:     "Почта для обновления",
+			Login:    "mailLogin",
+			Password: "mailPass",
+		},
 	}
 
-	byteSlice := make([][]byte, 2)
+	byteSlice := make([][]byte, 3)
 
 	for i, v := range reqSlice {
 		byteParam, err := json.Marshal(v)
@@ -191,6 +197,10 @@ func (parameters *testParam) addContentLogPass(t *testing.T) {
 		{
 			testName:  "Загрузка данных типа логин/пароль для удаления",
 			byteParam: byteSlice[1],
+		},
+		{
+			testName:  "Загрузка данных типа логин/пароль для обновления",
+			byteParam: byteSlice[2],
 		},
 	}
 
@@ -240,9 +250,9 @@ func (parameters *testParam) getContentLogPass(t *testing.T) {
 	)
 
 	wantData := dataSchema{
-		Name:     "Моя почта",
-		Login:    "mailLogin",
-		Password: "mailPass",
+		Name:     "Почта для обновления",
+		Login:    "NEWmailLogin",
+		Password: "NEWmailPass",
 	}
 
 	byteWant, err := json.Marshal(wantData)
@@ -250,9 +260,7 @@ func (parameters *testParam) getContentLogPass(t *testing.T) {
 
 	t.Run("Запрос данных типа логин/пароль", func(t *testing.T) {
 
-		name := "Моя почта"
-
-		request, err := http.NewRequest(http.MethodGet, parameters.srv.URL+"/api/content/"+name, nil)
+		request, err := http.NewRequest(http.MethodGet, parameters.srv.URL+"/api/content/"+wantData.Name, nil)
 		require.NoError(t, err)
 
 		for _, c := range parameters.user.cookies {
@@ -311,6 +319,71 @@ func (parameters *testParam) deleteContent(t *testing.T) {
 	})
 }
 
+// Обновление данных типа логин/пароль
+func (parameters *testParam) updateContent(t *testing.T) {
+
+	type (
+		testAPP struct {
+			testName  string
+			byteParam []byte
+		}
+		reqSchema struct {
+			Name     string `json:"name"`     // Наименование
+			Login    string `json:"login"`    // Логин
+			Password string `json:"password"` // Пароль
+		}
+	)
+
+	reqSlice := []reqSchema{
+		{
+			Name:     "Почта для обновления",
+			Login:    "NEWmailLogin",
+			Password: "NEWmailPass",
+		},
+	}
+
+	byteSlice := make([][]byte, 1)
+
+	for i, v := range reqSlice {
+		byteParam, err := json.Marshal(v)
+		require.NoError(t, err)
+		byteSlice[i] = byteParam
+	}
+
+	testTable := []testAPP{
+		{
+			testName:  "Обновление данных на сервере",
+			byteParam: byteSlice[0],
+		},
+	}
+
+	for _, testData := range testTable {
+		t.Run(testData.testName, func(t *testing.T) {
+
+			body := bytes.NewReader(testData.byteParam)
+			request, err := http.NewRequest(http.MethodPost, parameters.srv.URL+"/api/content/update", body)
+			require.NoError(t, err)
+			request.Header.Set("Content-Type", "application/json")
+			request.Header.Set("Data-Type", "LogPass")
+			request.Header.Set("Key", parameters.masterSK)
+
+			for _, c := range parameters.user.cookies {
+				request.AddCookie(c)
+			}
+
+			client := parameters.srv.Client()
+			r, err := client.Do(request)
+			require.NoError(t, err)
+
+			assert.Equal(t, http.StatusOK, r.StatusCode)
+
+			err = r.Body.Close()
+			require.NoError(t, err)
+
+		})
+	}
+}
+
 // Запрос списка загруженных данных
 func (parameters *testParam) сontentList(t *testing.T) {
 
@@ -319,8 +392,9 @@ func (parameters *testParam) сontentList(t *testing.T) {
 		Name string `json:"name"` // Наименование
 	}
 
-	want := make(map[string]bool, 1)
+	want := make(map[string]bool, 0)
 	want["Моя почта"] = true
+	want["Почта для обновления"] = true
 
 	t.Run("Запрос списка загруженных данных", func(t *testing.T) {
 

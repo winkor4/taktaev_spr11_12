@@ -223,3 +223,61 @@ func deleteContent(s *Server) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 	}
 }
+
+// Обновление данных на сервере
+func updateContent(s *Server) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		user, ok := userFromCtx(r.Context())
+		if !ok {
+			http.Error(w, "can't read login", http.StatusInternalServerError)
+			return
+		}
+
+		key := r.Header.Get("Key")
+		if key == "" {
+			http.Error(w, "can't read data type", http.StatusBadRequest)
+			return
+		}
+
+		dataType := r.Header.Get("Data-Type")
+		if dataType == "" {
+			http.Error(w, "can't read data type", http.StatusBadRequest)
+			return
+		}
+
+		parameters := getAddContentSchema(dataType)
+		err := parameters.jsonDecode(r.Body)
+		if err != nil {
+			http.Error(w, "Can't read body", http.StatusBadRequest)
+			return
+		}
+
+		encKey, err := s.db.GetKey(r.Context(), user)
+		if err != nil {
+			http.Error(w, "can't auth", http.StatusInternalServerError)
+			return
+		}
+
+		key, err = crypto.Decrypt(encKey, key)
+		if err != nil {
+			http.Error(w, "can't Decrypt key", http.StatusInternalServerError)
+			return
+		}
+
+		sData, err := parameters.schemaToStorageData(gerUserModel(user, "", key), dataType)
+		if err != nil {
+			http.Error(w, "can't save data", http.StatusInternalServerError)
+			return
+		}
+
+		err = s.db.UpdateContent(r.Context(), sData)
+		if err != nil {
+			http.Error(w, "can't update content to DB", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+
+	}
+}

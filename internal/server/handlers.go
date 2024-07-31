@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/winkor4/taktaev_spr11_12/internal/crypto"
 )
 
@@ -159,5 +160,27 @@ func addContent(s *Server) http.HandlerFunc {
 
 		w.WriteHeader(http.StatusOK)
 
+	}
+}
+
+// Возвращает данные по имени
+func getContent(s *Server) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		name := chi.URLParam(r, "name")
+		user, ok := userFromCtx(r.Context())
+		if !ok {
+			http.Error(w, "can't read login", http.StatusInternalServerError)
+			return
+		}
+		encData, err := s.db.GetContent(r.Context(), name, user)
+		if err != nil {
+			http.Error(w, "can't get content from DB", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(encDataToSchema(encData)); err != nil {
+			http.Error(w, "Can't encode response", http.StatusInternalServerError)
+			return
+		}
 	}
 }

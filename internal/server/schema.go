@@ -15,6 +15,14 @@ type authSchema struct {
 	Password string `json:"password"` // Пароль
 }
 
+// Данные возвращаемые сервером
+type getContentResponse struct {
+	Name   string `json:"name"`     // Наименование
+	Data   string `json:"data"`     // Зашифрованные данные
+	DataSK string `json:"data_key"` // Зашифрованный ключ данных
+	EncSK  string `json:"key"`      // Зашифрованный ключ ключа данных
+}
+
 // Интерфейс, который ползволяет прочитать тело запроса в зависимости от типа данных
 type addContentRequest interface {
 	jsonDecode(body io.ReadCloser) error
@@ -82,5 +90,14 @@ func gerUserModel(l string, p string, k string) model.User {
 		Login:    l,
 		Password: p,
 		Key:      k,
+	}
+}
+
+func encDataToSchema(data model.EncContent) getContentResponse {
+	return getContentResponse{
+		Name:   data.Name,
+		Data:   data.Data,
+		DataSK: data.DataSK,
+		EncSK:  data.EncSK,
 	}
 }

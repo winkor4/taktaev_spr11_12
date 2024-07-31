@@ -58,6 +58,7 @@ func apiRouter(s *Server) *chi.Mux {
 	r.Use(authorization())
 
 	r.Post("/content", checkContentType(addContent(s), "application/json"))
+	r.Get("/content/{name}", getContent(s))
 
 	return r
 }

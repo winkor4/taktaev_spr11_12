@@ -16,3 +16,11 @@ type StorageData struct {
 	Data   string // Зашифрованные данные
 	DataSK string // Зашифрованный ключ
 }
+
+// Описание данных возврата
+type EncContent struct {
+	Name   string // Наименование
+	Data   string // Зашифрованные данные
+	DataSK string // Зашифрованный ключ данных
+	EncSK  string // Зашифрованный ключ ключа данных
+}

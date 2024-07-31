@@ -5,12 +5,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/winkor4/taktaev_spr11_12/internal/crypto"
 	"github.com/winkor4/taktaev_spr11_12/internal/log"
 	"github.com/winkor4/taktaev_spr11_12/internal/pkg/config"
 	"github.com/winkor4/taktaev_spr11_12/internal/server"
@@ -38,6 +40,7 @@ func TestApp(t *testing.T) {
 	parameters.masterSK = "[GUc7^q!u}!%RFGt"
 	parameters.auth(t)
 	parameters.addContentLogPass(t)
+	parameters.getContentLogPass(t)
 }
 
 // Тестовый сервер
@@ -184,5 +187,68 @@ func (parameters *testParam) addContentLogPass(t *testing.T) {
 		require.NoError(t, err)
 
 	})
+}
 
+// Запрос данных типа логин/пароль
+func (parameters *testParam) getContentLogPass(t *testing.T) {
+
+	type (
+		dataSchema struct {
+			Name     string `json:"name"`     // Наименование
+			Login    string `json:"login"`    // Логин
+			Password string `json:"password"` // Пароль
+		}
+		response struct {
+			Name   string `json:"name"`     // Наименование
+			Data   string `json:"data"`     // Зашифрованные данные
+			DataSK string `json:"data_key"` // Зашифрованный ключ данных
+			EncSK  string `json:"key"`      // Зашифрованный ключ ключа данных
+		}
+	)
+
+	wantData := dataSchema{
+		Name:     "Моя почта",
+		Login:    "mailLogin",
+		Password: "mailPass",
+	}
+
+	byteWant, err := json.Marshal(wantData)
+	require.NoError(t, err)
+
+	t.Run("Запрос данных типа логин/пароль", func(t *testing.T) {
+
+		name := "Моя почта"
+
+		request, err := http.NewRequest(http.MethodGet, parameters.srv.URL+"/api/content/"+name, nil)
+		require.NoError(t, err)
+		request.Header.Set("Content-Type", "application/json")
+
+		for _, c := range parameters.user.cookies {
+			request.AddCookie(c)
+		}
+
+		client := parameters.srv.Client()
+		r, err := client.Do(request)
+		require.NoError(t, err)
+
+		assert.Equal(t, http.StatusOK, r.StatusCode)
+
+		rBody, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		err = r.Body.Close()
+		require.NoError(t, err)
+
+		var resp response
+		err = json.Unmarshal(rBody, &resp)
+		require.NoError(t, err)
+
+		key, err := crypto.Decrypt(resp.EncSK, parameters.masterSK)
+		require.NoError(t, err)
+		dataKey, err := crypto.Decrypt(resp.DataSK, key)
+		require.NoError(t, err)
+		decData, err := crypto.Decrypt(resp.Data, dataKey)
+		require.NoError(t, err)
+		assert.JSONEq(t, string(byteWant), decData)
+
+	})
 }

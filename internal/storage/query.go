@@ -7,12 +7,13 @@ var migrations = []string{
 		password TEXT NOT NULL,
 		key TEXT NOT NULL
 	);`,
-	// `CREATE TABLE IF NOT EXISTS text_data (
-	// 	user_login TEXT UNIQUE NOT NULL,
-	// 	id TEXT UNIQUE NOT NULL,
-	// 	data TEXT NOT NULL
-	// );`,
-	// `ALTER TABLE text_data ADD UNIQUE (user_login, id)`,
+	`CREATE TABLE IF NOT EXISTS content (
+		id TEXT UNIQUE NOT NULL,
+		user_login TEXT NOT NULL,
+		name TEXT NOT NULL,
+		data TEXT NOT NULL,
+		data_key TEXT NOT NULL
+	);`,
 }
 
 var (
@@ -46,4 +47,35 @@ var (
 		users
 	WHERE 
 		login = $1`
+
+	queryInsertContent = `
+	INSERT INTO content
+	(
+		id,
+		user_login,
+		name,
+		data,
+		data_key
+	)
+	VALUES 
+	(
+		$1,
+		$2,
+		$3,
+		$4,
+		$5
+	)`
+
+	queryGetContent = `
+	SELECT 
+		content.data,
+		content.data_key,
+		users.key
+	FROM 
+		content as content
+		LEFT JOIN users as users
+		ON content.user_login = users.login
+	WHERE
+		user_login = $1
+		AND name = $2`
 )

@@ -110,5 +110,30 @@ func (db *DB) GetKey(ctx context.Context, login string) (string, error) {
 
 // Запись данных в БД
 func (db *DB) AddContent(ctx context.Context, sData model.StorageData) error {
-	return nil
+	_, err := db.db.ExecContext(ctx, queryInsertContent,
+		sData.ID,
+		sData.User.Login,
+		sData.Name,
+		sData.Data,
+		sData.DataSK)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (db *DB) GetContent(ctx context.Context, name, user string) (model.EncContent, error) {
+	var result model.EncContent
+	result.Name = name
+	row := db.db.QueryRowContext(ctx, queryGetContent, user, name)
+
+	err := row.Scan(&result.Data, &result.DataSK, &result.EncSK)
+	if err == sql.ErrNoRows {
+		return result, nil
+	}
+	if err != nil {
+		return result, err
+	}
+
+	return result, nil
 }

@@ -9,6 +9,12 @@ import (
 	"github.com/winkor4/taktaev_spr11_12/internal/model"
 )
 
+// Интерфейс, который ползволяет прочитать тело запроса в зависимости от типа данных
+type addContentRequest interface {
+	jsonDecode(body io.ReadCloser) error
+	schemaToStorageData(user model.User, dataType string) (model.StorageData, error)
+}
+
 // Входящие данные при регистрации и авторизации
 type authSchema struct {
 	Login    string `json:"login"`    // Логин
@@ -17,16 +23,16 @@ type authSchema struct {
 
 // Данные возвращаемые сервером
 type getContentResponse struct {
-	Name   string `json:"name"`     // Наименование
-	Data   string `json:"data"`     // Зашифрованные данные
-	DataSK string `json:"data_key"` // Зашифрованный ключ данных
-	EncSK  string `json:"key"`      // Зашифрованный ключ ключа данных
+	Name     string `json:"name"`      // Наименование
+	DataType string `json:"data_type"` // Тип данных
+	Data     string `json:"data"`      // Зашифрованные данные
+	DataSK   string `json:"data_key"`  // Зашифрованный ключ данных
+	EncSK    string `json:"key"`       // Зашифрованный ключ ключа данных
 }
 
-// Интерфейс, который ползволяет прочитать тело запроса в зависимости от типа данных
-type addContentRequest interface {
-	jsonDecode(body io.ReadCloser) error
-	schemaToStorageData(user model.User) (model.StorageData, error)
+// Данные возвращаемые сервером
+type contentListResponse struct {
+	Name string `json:"name"` // Наименование
 }
 
 // Описание данных типа логин/пароль
@@ -45,7 +51,6 @@ func getAddContentSchema(dataType string) addContentRequest {
 	}
 
 	return result
-
 }
 
 func (schema *addContentLogPass) jsonDecode(body io.ReadCloser) error {
@@ -56,7 +61,7 @@ func (schema *addContentLogPass) jsonDecode(body io.ReadCloser) error {
 	return nil
 }
 
-func (schema *addContentLogPass) schemaToStorageData(user model.User) (model.StorageData, error) {
+func (schema *addContentLogPass) schemaToStorageData(user model.User, dataType string) (model.StorageData, error) {
 
 	var result model.StorageData
 
@@ -78,11 +83,11 @@ func (schema *addContentLogPass) schemaToStorageData(user model.User) (model.Sto
 	result.ID = uuid.New().String()
 	result.User = user
 	result.Name = schema.Name
+	result.ContentType = dataType
 	result.Data = encData
 	result.DataSK = encKey
 
 	return result, nil
-
 }
 
 func gerUserModel(l string, p string, k string) model.User {
@@ -95,9 +100,20 @@ func gerUserModel(l string, p string, k string) model.User {
 
 func encDataToSchema(data model.EncContent) getContentResponse {
 	return getContentResponse{
-		Name:   data.Name,
-		Data:   data.Data,
-		DataSK: data.DataSK,
-		EncSK:  data.EncSK,
+		Name:     data.Name,
+		DataType: data.ContentType,
+		Data:     data.Data,
+		DataSK:   data.DataSK,
+		EncSK:    data.EncSK,
 	}
+}
+
+func dataListToSchema(dataList []string) []contentListResponse {
+	result := make([]contentListResponse, 0, len(dataList))
+	for _, v := range dataList {
+		var resp contentListResponse
+		resp.Name = v
+		result = append(result, resp)
+	}
+	return result
 }

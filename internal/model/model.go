@@ -10,17 +10,19 @@ type User struct {
 
 // Описание данных
 type StorageData struct {
-	ID     string // UUID
-	Name   string // Наименование
-	User   User   // Пользователь
-	Data   string // Зашифрованные данные
-	DataSK string // Зашифрованный ключ
+	ID          string // UUID
+	Name        string // Наименование
+	ContentType string // Тип данных
+	User        User   // Пользователь
+	Data        string // Зашифрованные данные
+	DataSK      string // Зашифрованный ключ
 }
 
 // Описание данных возврата
 type EncContent struct {
-	Name   string // Наименование
-	Data   string // Зашифрованные данные
-	DataSK string // Зашифрованный ключ данных
-	EncSK  string // Зашифрованный ключ ключа данных
+	Name        string // Наименование
+	ContentType string // Тип данных
+	Data        string // Зашифрованные данные
+	DataSK      string // Зашифрованный ключ данных
+	EncSK       string // Зашифрованный ключ ключа данных
 }

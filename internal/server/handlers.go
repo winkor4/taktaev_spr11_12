@@ -146,7 +146,7 @@ func addContent(s *Server) http.HandlerFunc {
 			return
 		}
 
-		sData, err := parameters.schemaToStorageData(gerUserModel(user, "", key))
+		sData, err := parameters.schemaToStorageData(gerUserModel(user, "", key), dataType)
 		if err != nil {
 			http.Error(w, "can't save data", http.StatusInternalServerError)
 			return
@@ -182,5 +182,44 @@ func getContent(s *Server) http.HandlerFunc {
 			http.Error(w, "Can't encode response", http.StatusInternalServerError)
 			return
 		}
+	}
+}
+
+// Возвращает список данных
+func contentList(s *Server) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, ok := userFromCtx(r.Context())
+		if !ok {
+			http.Error(w, "can't read login", http.StatusInternalServerError)
+			return
+		}
+		dataList, err := s.db.ContentList(r.Context(), user)
+		if err != nil {
+			http.Error(w, "can't get content from DB", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(dataListToSchema(dataList)); err != nil {
+			http.Error(w, "Can't encode response", http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+// Удаляет данные с сервера
+func deleteContent(s *Server) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		name := chi.URLParam(r, "name")
+		user, ok := userFromCtx(r.Context())
+		if !ok {
+			http.Error(w, "can't read login", http.StatusInternalServerError)
+			return
+		}
+		err := s.db.DeleteContent(r.Context(), name, user)
+		if err != nil {
+			http.Error(w, "can't delete content from DB", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
 	}
 }

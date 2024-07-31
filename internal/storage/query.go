@@ -11,6 +11,7 @@ var migrations = []string{
 		id TEXT UNIQUE NOT NULL,
 		user_login TEXT NOT NULL,
 		name TEXT NOT NULL,
+		content_type TEXT NOT NULL,
 		data TEXT NOT NULL,
 		data_key TEXT NOT NULL
 	);`,
@@ -54,6 +55,7 @@ var (
 		id,
 		user_login,
 		name,
+		content_type,
 		data,
 		data_key
 	)
@@ -63,19 +65,37 @@ var (
 		$2,
 		$3,
 		$4,
-		$5
+		$5,
+		$6
 	)`
 
 	queryGetContent = `
 	SELECT 
 		content.data,
 		content.data_key,
+		content.content_type,
 		users.key
 	FROM 
 		content as content
 		LEFT JOIN users as users
 		ON content.user_login = users.login
 	WHERE
+		user_login = $1
+		AND name = $2`
+
+	queryContentList = `
+	SELECT
+		name
+	FROM
+		content
+	WHERE
+		user_login = $1
+	GROUP BY
+		name`
+
+	queryDeleteContent = `
+	DELETE FROM content
+	WHERE 
 		user_login = $1
 		AND name = $2`
 )

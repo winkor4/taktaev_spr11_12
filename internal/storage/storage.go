@@ -110,24 +110,36 @@ func (db *DB) GetKey(ctx context.Context, login string) (string, error) {
 
 // Запись данных в БД
 func (db *DB) AddContent(ctx context.Context, sData model.StorageData) error {
-	_, err := db.db.ExecContext(ctx, queryInsertContent,
-		sData.ID,
-		sData.User.Login,
-		sData.Name,
-		sData.Data,
-		sData.DataSK)
+
+	tx, err := db.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	return err
+	if _, err := tx.Exec(queryInsertContent,
+		sData.ID,
+		sData.User.Login,
+		sData.Name,
+		sData.ContentType,
+		sData.Data,
+		sData.DataSK); err != nil {
+		err = tx.Rollback()
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		err = tx.Rollback()
+		return err
+	}
+
+	return nil
 }
 
+// Возвращает данные из БД по имени
 func (db *DB) GetContent(ctx context.Context, name, user string) (model.EncContent, error) {
 	var result model.EncContent
 	result.Name = name
 	row := db.db.QueryRowContext(ctx, queryGetContent, user, name)
 
-	err := row.Scan(&result.Data, &result.DataSK, &result.EncSK)
+	err := row.Scan(&result.Data, &result.DataSK, &result.ContentType, &result.EncSK)
 	if err == sql.ErrNoRows {
 		return result, nil
 	}
@@ -136,4 +148,47 @@ func (db *DB) GetContent(ctx context.Context, name, user string) (model.EncConte
 	}
 
 	return result, nil
+}
+
+// Возвращает список данных пользователя
+func (db *DB) ContentList(ctx context.Context, user string) ([]string, error) {
+	rows, err := db.db.QueryContext(ctx, queryContentList, user)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]string, 0)
+	for rows.Next() {
+		var name string
+		err := rows.Scan(&name)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, name)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+
+	return result, nil
+}
+
+// Удаляет данные из БД
+func (db *DB) DeleteContent(ctx context.Context, name, user string) error {
+	tx, err := db.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	if _, err := tx.Exec(queryDeleteContent, user, name); err != nil {
+		err = tx.Rollback()
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		err = tx.Rollback()
+		return err
+	}
+
+	return nil
 }

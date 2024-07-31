@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -41,6 +42,8 @@ func TestApp(t *testing.T) {
 	parameters.auth(t)
 	parameters.addContentLogPass(t)
 	parameters.getContentLogPass(t)
+	parameters.deleteContent(t)
+	parameters.сontentList(t)
 }
 
 // Тестовый сервер
@@ -148,6 +151,10 @@ func (parameters *testParam) auth(t *testing.T) {
 func (parameters *testParam) addContentLogPass(t *testing.T) {
 
 	type (
+		testAPP struct {
+			testName  string
+			byteParam []byte
+		}
 		reqSchema struct {
 			Name     string `json:"name"`     // Наименование
 			Login    string `json:"login"`    // Логин
@@ -155,38 +162,63 @@ func (parameters *testParam) addContentLogPass(t *testing.T) {
 		}
 	)
 
-	reqParam := reqSchema{
-		Name:     "Моя почта",
-		Login:    "mailLogin",
-		Password: "mailPass",
+	reqSlice := []reqSchema{
+		{
+			Name:     "Моя почта",
+			Login:    "mailLogin",
+			Password: "mailPass",
+		},
+		{
+			Name:     "Моя рабочая почта",
+			Login:    "mailLogin",
+			Password: "mailPass",
+		},
 	}
 
-	byteParam, err := json.Marshal(reqParam)
-	require.NoError(t, err)
+	byteSlice := make([][]byte, 2)
 
-	t.Run("Загрузка данных типа логин/пароль", func(t *testing.T) {
-
-		body := bytes.NewReader(byteParam)
-		request, err := http.NewRequest(http.MethodPost, parameters.srv.URL+"/api/content", body)
+	for i, v := range reqSlice {
+		byteParam, err := json.Marshal(v)
 		require.NoError(t, err)
-		request.Header.Set("Content-Type", "application/json")
-		request.Header.Set("Data-Type", "LogPass")
-		request.Header.Set("Key", parameters.masterSK)
+		byteSlice[i] = byteParam
+	}
 
-		for _, c := range parameters.user.cookies {
-			request.AddCookie(c)
-		}
+	testTable := []testAPP{
+		{
+			testName:  "Загрузка данных типа логин/пароль",
+			byteParam: byteSlice[0],
+		},
+		{
+			testName:  "Загрузка данных типа логин/пароль для удаления",
+			byteParam: byteSlice[1],
+		},
+	}
 
-		client := parameters.srv.Client()
-		r, err := client.Do(request)
-		require.NoError(t, err)
+	for _, testData := range testTable {
+		t.Run(testData.testName, func(t *testing.T) {
 
-		assert.Equal(t, http.StatusOK, r.StatusCode)
+			body := bytes.NewReader(testData.byteParam)
+			request, err := http.NewRequest(http.MethodPost, parameters.srv.URL+"/api/content", body)
+			require.NoError(t, err)
+			request.Header.Set("Content-Type", "application/json")
+			request.Header.Set("Data-Type", "LogPass")
+			request.Header.Set("Key", parameters.masterSK)
 
-		err = r.Body.Close()
-		require.NoError(t, err)
+			for _, c := range parameters.user.cookies {
+				request.AddCookie(c)
+			}
 
-	})
+			client := parameters.srv.Client()
+			r, err := client.Do(request)
+			require.NoError(t, err)
+
+			assert.Equal(t, http.StatusOK, r.StatusCode)
+
+			err = r.Body.Close()
+			require.NoError(t, err)
+
+		})
+	}
 }
 
 // Запрос данных типа логин/пароль
@@ -199,10 +231,11 @@ func (parameters *testParam) getContentLogPass(t *testing.T) {
 			Password string `json:"password"` // Пароль
 		}
 		response struct {
-			Name   string `json:"name"`     // Наименование
-			Data   string `json:"data"`     // Зашифрованные данные
-			DataSK string `json:"data_key"` // Зашифрованный ключ данных
-			EncSK  string `json:"key"`      // Зашифрованный ключ ключа данных
+			Name     string `json:"name"`      // Наименование
+			DataType string `json:"data_type"` // Тип данных
+			Data     string `json:"data"`      // Зашифрованные данные
+			DataSK   string `json:"data_key"`  // Зашифрованный ключ данных
+			EncSK    string `json:"key"`       // Зашифрованный ключ ключа данных
 		}
 	)
 
@@ -221,7 +254,6 @@ func (parameters *testParam) getContentLogPass(t *testing.T) {
 
 		request, err := http.NewRequest(http.MethodGet, parameters.srv.URL+"/api/content/"+name, nil)
 		require.NoError(t, err)
-		request.Header.Set("Content-Type", "application/json")
 
 		for _, c := range parameters.user.cookies {
 			request.AddCookie(c)
@@ -249,6 +281,77 @@ func (parameters *testParam) getContentLogPass(t *testing.T) {
 		decData, err := crypto.Decrypt(resp.Data, dataKey)
 		require.NoError(t, err)
 		assert.JSONEq(t, string(byteWant), decData)
+		assert.Equal(t, "LogPass", resp.DataType)
+
+	})
+}
+
+// Удаление ранее загруженных данных
+func (parameters *testParam) deleteContent(t *testing.T) {
+	t.Run("Запрос данных типа логин/пароль", func(t *testing.T) {
+
+		name := "Моя рабочая почта"
+
+		request, err := http.NewRequest(http.MethodDelete, parameters.srv.URL+"/api/content/"+name, nil)
+		require.NoError(t, err)
+
+		for _, c := range parameters.user.cookies {
+			request.AddCookie(c)
+		}
+
+		client := parameters.srv.Client()
+		r, err := client.Do(request)
+		require.NoError(t, err)
+
+		assert.Equal(t, http.StatusOK, r.StatusCode)
+
+		err = r.Body.Close()
+		require.NoError(t, err)
+
+	})
+}
+
+// Запрос списка загруженных данных
+func (parameters *testParam) сontentList(t *testing.T) {
+
+	// Данные возвращаемые сервером
+	type response struct {
+		Name string `json:"name"` // Наименование
+	}
+
+	want := make(map[string]bool, 1)
+	want["Моя почта"] = true
+
+	t.Run("Запрос списка загруженных данных", func(t *testing.T) {
+
+		request, err := http.NewRequest(http.MethodGet, parameters.srv.URL+"/api/content", nil)
+		require.NoError(t, err)
+
+		for _, c := range parameters.user.cookies {
+			request.AddCookie(c)
+		}
+
+		client := parameters.srv.Client()
+		r, err := client.Do(request)
+		require.NoError(t, err)
+
+		assert.Equal(t, http.StatusOK, r.StatusCode)
+
+		rBody, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		err = r.Body.Close()
+		require.NoError(t, err)
+
+		resp := make([]response, 0)
+		err = json.Unmarshal(rBody, &resp)
+		require.NoError(t, err)
+
+		for _, v := range resp {
+			_, ok := want[v.Name]
+			if !ok {
+				require.NoError(t, errors.New("no content"))
+			}
+		}
 
 	})
 }

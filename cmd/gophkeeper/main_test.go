@@ -29,8 +29,8 @@ type testParam struct {
 
 // Тестовый пользователь
 type testUser struct {
-	login   string
-	cookies []*http.Cookie
+	login    string
+	password string
 }
 
 // Функция тестирования приложения
@@ -86,7 +86,7 @@ func (parameters *testParam) auth(t *testing.T) {
 
 	reqParam := reqSchema{
 		Login:    "ivan",
-		Password: "123",
+		Password: "asduq6we79gq7wfd",
 	}
 
 	byteParam, err := json.Marshal(reqParam)
@@ -110,8 +110,8 @@ func (parameters *testParam) auth(t *testing.T) {
 		assert.Equal(t, http.StatusOK, r.StatusCode)
 
 		parameters.user = testUser{
-			login:   reqParam.Login,
-			cookies: r.Cookies(),
+			login:    reqParam.Login,
+			password: reqParam.Password,
 		}
 
 		err = r.Body.Close()
@@ -138,8 +138,8 @@ func (parameters *testParam) auth(t *testing.T) {
 		assert.Equal(t, http.StatusOK, r.StatusCode)
 
 		parameters.user = testUser{
-			login:   reqParam.Login,
-			cookies: r.Cookies(),
+			login:    reqParam.Login,
+			password: reqParam.Password,
 		}
 
 		err = r.Body.Close()
@@ -213,10 +213,7 @@ func (parameters *testParam) addContentLogPass(t *testing.T) {
 			request.Header.Set("Content-Type", "application/json")
 			request.Header.Set("Data-Type", "LogPass")
 			request.Header.Set("Key", parameters.masterSK)
-
-			for _, c := range parameters.user.cookies {
-				request.AddCookie(c)
-			}
+			request.SetBasicAuth(parameters.user.login, parameters.user.password)
 
 			client := parameters.srv.Client()
 			r, err := client.Do(request)
@@ -263,9 +260,7 @@ func (parameters *testParam) getContentLogPass(t *testing.T) {
 		request, err := http.NewRequest(http.MethodGet, parameters.srv.URL+"/api/content/"+wantData.Name, nil)
 		require.NoError(t, err)
 
-		for _, c := range parameters.user.cookies {
-			request.AddCookie(c)
-		}
+		request.SetBasicAuth(parameters.user.login, parameters.user.password)
 
 		client := parameters.srv.Client()
 		r, err := client.Do(request)
@@ -303,9 +298,7 @@ func (parameters *testParam) deleteContent(t *testing.T) {
 		request, err := http.NewRequest(http.MethodDelete, parameters.srv.URL+"/api/content/"+name, nil)
 		require.NoError(t, err)
 
-		for _, c := range parameters.user.cookies {
-			request.AddCookie(c)
-		}
+		request.SetBasicAuth(parameters.user.login, parameters.user.password)
 
 		client := parameters.srv.Client()
 		r, err := client.Do(request)
@@ -367,9 +360,7 @@ func (parameters *testParam) updateContent(t *testing.T) {
 			request.Header.Set("Data-Type", "LogPass")
 			request.Header.Set("Key", parameters.masterSK)
 
-			for _, c := range parameters.user.cookies {
-				request.AddCookie(c)
-			}
+			request.SetBasicAuth(parameters.user.login, parameters.user.password)
 
 			client := parameters.srv.Client()
 			r, err := client.Do(request)
@@ -401,9 +392,7 @@ func (parameters *testParam) сontentList(t *testing.T) {
 		request, err := http.NewRequest(http.MethodGet, parameters.srv.URL+"/api/content", nil)
 		require.NoError(t, err)
 
-		for _, c := range parameters.user.cookies {
-			request.AddCookie(c)
-		}
+		request.SetBasicAuth(parameters.user.login, parameters.user.password)
 
 		client := parameters.srv.Client()
 		r, err := client.Do(request)

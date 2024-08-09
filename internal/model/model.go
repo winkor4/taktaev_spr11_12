@@ -26,3 +26,11 @@ type EncContent struct {
 	DataSK      string // Зашифрованный ключ данных
 	EncSK       string // Зашифрованный ключ ключа данных
 }
+
+func GerUserModel(l string, p string, k string) User {
+	return User{
+		Login:    l,
+		Password: p,
+		Key:      k,
+	}
+}

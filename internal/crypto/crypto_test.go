@@ -12,7 +12,7 @@ import (
 func TestEncrypt(t *testing.T) {
 
 	stringToEncrypt := "123"
-	masterSK := "qwertyuioasdfghj"
+	masterSK := "202cb962ac59075b964b07152d234b70"
 
 	encText, err := Encrypt(stringToEncrypt, masterSK)
 	require.NoError(t, err)

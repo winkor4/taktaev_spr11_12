@@ -1,6 +1,6 @@
 package model
 
-type Credentials struct {
-	Login    string
-	Password string
+type AddRequest struct {
+	Body     []byte
+	DataType string
 }

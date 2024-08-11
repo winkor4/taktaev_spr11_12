@@ -2,10 +2,13 @@
 package crypto
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/md5"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"io"
 	mrand "math/rand"
@@ -95,4 +98,14 @@ func RandStr(n int) string {
 	})
 
 	return string(b)
+}
+
+// PasswordHash возвращает ключ по паролю.
+func PasswordHash(password string) string {
+	var bb bytes.Buffer
+	bb.Grow(len(password))
+	bb.WriteString(password)
+
+	hash := md5.Sum(bb.Bytes())
+	return hex.EncodeToString(hash[:])
 }

@@ -119,8 +119,12 @@ func getContent(s *Server) http.HandlerFunc {
 		contentManager := content.NewContentManager(cfg)
 
 		encData, err := contentManager.GetContent(r.Context())
-		if err != nil {
+		switch {
+		case err != nil:
 			http.Error(w, "can't get content by name", http.StatusInternalServerError)
+			return
+		case encData.ContentType == "":
+			http.Error(w, "empty content", http.StatusNoContent)
 			return
 		}
 
@@ -205,7 +209,6 @@ func writreContentManager(r *http.Request, s *Server) (*content.ContentManager, 
 	contentManager := new(content.ContentManager)
 	user, ok := userFromCtx(r.Context())
 	if !ok {
-
 		return contentManager, errBadReq
 	}
 
